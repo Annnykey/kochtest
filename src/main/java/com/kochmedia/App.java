@@ -20,7 +20,7 @@ public class App
     	logger.debug("This is debug!");
 
     	//get new mails
-    	Message[] messages = Mail.get();
+    	Message[] messages = Mail.getNewMessages();
 
     	logger.debug("Received " + messages.length + " new messages");
 

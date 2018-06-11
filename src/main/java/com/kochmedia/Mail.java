@@ -1,13 +1,11 @@
 package com.kochmedia;
 
 import java.util.Properties;
-
-import javax.mail.Folder;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.NoSuchProviderException;
-import javax.mail.Session;
-import javax.mail.Store;
+import javax.mail.*;
+import javax.mail.search.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 import org.apache.log4j.Logger;
 
@@ -15,70 +13,77 @@ public class Mail {
 
 	final static Logger logger = Logger.getLogger(Mail.class);
 
-   	public static Message[] check(String host, String storeType, String user, String password) 
+   	public static Message[] getNewMessages() 
    	{
-      try {
+		//TODO: move to separate class
+		Properties prop = new Properties();
+		InputStream input = null;
 
-      //create properties field
-      Properties properties = new Properties();
+		try {
 
-      properties.put("mail.imap.host", host);
-      properties.put("mail.imap.port", "995");
-      properties.put("mail.imap.starttls.enable", "true");
-      Session emailSession = Session.getDefaultInstance(properties);
-  
-      //create the POP3 store object and connect with the pop server
-      Store store = emailSession.getStore("pop3s");
+			input = new FileInputStream("config.properties");
+			// load a properties file
+			prop.load(input);
 
-      store.connect(host, user, password);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
-      //create the folder object and open it
-      Folder emailFolder = store.getFolder("Inbox");
+		try {
+			String host = prop.getProperty("receive.host");
+			String storeType = prop.getProperty("receive.storeType");
+			String user = prop.getProperty("receive.email");
+			String password = prop.getProperty("receive.password");
+			String folder = prop.getProperty("receive.folder");
 
-      logger.debug("No of Unread Messages : " + emailFolder.getUnreadMessageCount());
-      emailFolder.open(Folder.READ_ONLY);
+			//create properties field
+			//TODO unify with my properties
+			Properties properties = new Properties();
 
-      // retrieve the messages from the folder in an array and print it
-      Message[] messages = emailFolder.getMessages();
-      System.out.println("messages.length : " + messages.length);
+			properties.put("mail.imap.host", host);
+			properties.put("mail.imap.port", "995");
+			properties.put("mail.imap.starttls.enable", "true");
+			Session emailSession = Session.getDefaultInstance(properties);
 
-      /*for (int i = 0, n = messages.length; i < n; i++) {
-         Message message = messages[i];
-         System.out.println("---------------------------------");
-         System.out.println("Email Number " + (i + 1));
-         System.out.println("Subject: " + message.getSubject());
-         System.out.println("From: " + message.getFrom()[0]);
-         System.out.println("Text: " + message.getContent().toString());
+			//create the POP3 store object and connect with the pop server
+			Store store = emailSession.getStore("imaps");
 
-      }*/
+			store.connect(host, user, password);
 
-      //close the store and folder objects
-      emailFolder.close(false);
-      store.close();
+			//create the folder object and open it
+			Folder emailFolder = store.getFolder(folder);
 
-      return messages;
+			logger.debug("No of Unread Messages : " + emailFolder.getUnreadMessageCount());
+			emailFolder.open(Folder.READ_ONLY);
 
-      } catch (NoSuchProviderException e) {
-         e.printStackTrace();
-      } catch (MessagingException e) {
-         e.printStackTrace();
-      } catch (Exception e) {
-         e.printStackTrace();
-      }
-      return new Message[0];
+			// retrieve the messages from the folder in an array and print it
+			Message[] messages = emailFolder.search(new FlagTerm(new Flags(Flags.Flag.SEEN), false));
 
-   }
+			logger.debug("messages.length : " + messages.length);
 
-   public static Message[] get() {
+			for (int i = 0, n = messages.length; i < n; i++) {
+				Message message = messages[i];
+				logger.debug("---------------------------------");
+				logger.debug("Email Number " + (i + 1));
+				logger.debug("Subject: " + message.getSubject());
+				logger.debug("From: " + message.getFrom()[0]);
+			}
 
-      String host = "pop.gmail.com";// change accordingly
-      String mailStoreType = "pop3";
-      String username = "***";// change accordingly
-      //dijeqfoygvdjnkfl
-      String password = "***";// change accordingly
+			//close the store and folder objects
+			emailFolder.close(false);
+			store.close();
 
-      return check(host, mailStoreType, username, password);
+			return messages;
 
+		} catch (AuthenticationFailedException e) {
+			logger.error("Invalid email credentials!");
+		} catch (Exception e) {
+			logger.error("Error reading messages!");
+			e.printStackTrace();
+		}
+
+		//return empty array if exception
+		return new Message[0];
    }
 
    public static Boolean send(String report){

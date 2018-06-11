@@ -2,6 +2,7 @@ package com.kochmedia;
 
 import org.apache.log4j.Logger;
 import com.kochmedia.AppStatus;
+import com.kochmedia.AppStatus.Status;
 import javax.mail.Message;
 import java.util.*;
 
@@ -23,7 +24,15 @@ public class Filter
 	}
 
 	private static AppStatus getAppStatus(Message message){
-		AppStatus appStatus = new AppStatus("test");
+		AppStatus appStatus = new AppStatus();
+		try{
+			appStatus.name = message.getFrom()[0].toString();
+			appStatus.status = Status.SUCCESS;
+		} catch (Exception e) {
+			logger.error("Error parsing message!");
+			e.printStackTrace();
+		}
+
 		//TODO
 		//if (message.subject == "SUCCESS"){
 		//	AppStatus appStatus = new AppStatus();
