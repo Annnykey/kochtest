@@ -1,11 +1,12 @@
 package com.kochmedia;
 
 import org.apache.log4j.Logger;
+import java.util.*;
+import javax.mail.Message;
+
 import com.kochmedia.Mail;
 import com.kochmedia.Report;
-import java.util.*;
-
-import javax.mail.Message;
+import com.kochmedia.Config;
 
 /**
  * Hello world!
@@ -14,30 +15,44 @@ import javax.mail.Message;
 public class App 
 {
 	final static Logger logger = Logger.getLogger(App.class);
+    final static Config config = new Config();
 
     public static void main( String[] args )
     {
-    	logger.debug("This is debug!");
+    	logger.debug("Checking " + config.get("receive.email") + " for new mails...");
 
     	//get new mails
-    	Message[] messages = Mail.getNewMessages();
+    	List<Email> emails = Mail.getNewMessages();
 
-    	logger.debug("Received " + messages.length + " new messages");
+        if(emails.size() == 0){
+            logger.debug("No new messages... Terminating...");
+            return;
+        }
+
+        for (Email email : emails){
+            logger.debug("Subject: " + email.subject);
+            logger.debug("From: " + email.from);
+        }
+
+    	logger.debug("Received " + emails.size() + " new messages... Processing...");
 
     	//filter mails
-    	List<AppStatus> apps = Filter.filter(messages);
+    	List<AppStatus> apps = Filter.filter(emails);
 
+        logger.debug("Building report...");
     	//make report
     	String report = Report.generate(apps);
 
+        logger.debug("Sending report...");
     	//send report
     	Boolean sendStatus = Mail.send(report);
 
+        logger.debug("Setting messages read...");
     	//set messages read
     	if (sendStatus == true){
-    		Boolean setReadStatus = Mail.setRead(messages);
+    		Boolean setReadStatus = Mail.setRead(emails);
     	}
 
-        System.out.println( "Report send!" );
+        logger.debug( emails.size() + " emails processed... Report send... Have a nice day..." );
     }
 }
