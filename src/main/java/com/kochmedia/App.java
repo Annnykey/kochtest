@@ -39,6 +39,8 @@ public class App
     	//filter mails
     	List<AppStatus> apps = Filter.filter(emails);
 
+        logger.debug("Found " + apps.size() + " application reports...");
+
         logger.debug("Building report...");
     	//make report
     	String report = Report.generate(apps);

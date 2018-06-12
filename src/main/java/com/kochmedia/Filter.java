@@ -20,44 +20,35 @@ public class Filter
 	final static Config config = new Config();
 
 	public static List<AppStatus> filter(List<Email> emails){
+		List<AppStatus> appStatusList = new ArrayList<>();
 		JSONParser parser = new JSONParser();
 
-		try{
-			Object filterConfig = parser.parse(config.get("filter"));
-			JSONArray filterArray = (JSONArray)filterConfig;
-			for (int i = 0; i < filterArray.size(); i++) {
-				logger.debug(filterArray.get(i));
-			}
-		}catch(ParseException e){
-			logger.error("Error parsing filter settings from config!");
-			logger.debug(e);
-		}
-
-		List<AppStatus> appStatusList = new ArrayList<>();
-
 		for (Email email : emails) {
-			AppStatus appStatus = getAppStatus(email);
-			appStatusList.add(appStatus);
+			try{
+				JSONArray filter = (JSONArray)parser.parse(config.get("filter"));
+				for (int i = 0; i < filter.size(); i++) {
+					JSONObject app = (JSONObject)filter.get(i);
+					String appName = (String) app.get("name");
+					JSONObject appFilter = (JSONObject)app.get("filter");
+					String subject = (String) appFilter.get("subject");
+					logger.debug(subject);
+					//String from = appFilter.get("from");
+					//String body = appFilter.get("body");
+					if(email.subject.equals(subject)){
+						AppStatus appStatus = new AppStatus();
+						appStatus.name = appName;
+						//TODO add status to filter
+						appStatus.status = Status.SUCCESS;
+						//TODO add date
+						appStatusList.add(appStatus);
+					}
+				}
+			}catch(Exception e){
+				logger.error("Error parsing filter settings from config!");
+				logger.debug(e);
+			}
 		}
 
 		return appStatusList;
-	}
-
-	private static AppStatus getAppStatus(Email email){
-		AppStatus appStatus = new AppStatus();
-		try{
-			appStatus.name = email.from;
-			appStatus.status = Status.SUCCESS;
-		} catch (Exception e) {
-			logger.error("Error parsing message!");
-			e.printStackTrace();
-		}
-
-		//TODO
-		//if (message.subject == "SUCCESS"){
-		//	AppStatus appStatus = new AppStatus();
-		//	appStatus.status = Status.SUCCESS;
-		//}
-		return appStatus;
 	}
 }
